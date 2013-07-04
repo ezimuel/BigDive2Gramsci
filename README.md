@@ -9,9 +9,9 @@ Project
 The goal of this project was to estimate the Network Neutrality (NN) based on the ADSL download data used by the NeuBot project (http://neubot.org/).
 We implemented a system in Python to extract data from the samples of NeuBot (CSV file) and estimate the NN based on this formula:
     
-    ```
-    NN = 1 - | ST - BT | / ST
-    ```
+```    
+NN = 1 - | ST - BT | / ST
+```    
 
 where `ST` is the Speed Test (bytes/sec) and `BT` is the BitTorrent Test (bytes/sec) retrieved from the NetBot data.
 We aggregated the data by country, city and provider and putted the result on a geographic map.
@@ -44,10 +44,16 @@ In order to elaborate the NN from the NeuBot data you have to execute the follow
    The data reported here are related to January 2013 of NeuBot project.
 
 5) Execute the neutrality.py script to elaborate the Network Neutrality for each NeuBot data:
-    $ python neutrality.py
-    
+
+```bash
+$ python neutrality.py
+```    
+
 6) Aggregate the data by country, city and provider using the aggregate_by_country.py script:
-    $ python aggregate_by_country.py > neutrality_country_012013.json   
+
+```bash
+$ python aggregate_by_country.py > neutrality_country_012013.json   
+```
 
 This Json file can be used by D3.js to plot the data in a world map (this Json file is stored in the public/data folder).
 
@@ -55,9 +61,7 @@ This Json file can be used by D3.js to plot the data in a world map (this Json f
 Team "Gramsci devoted"
 ----------------------
 
-Giuseppe Futia (giuseppe.futia@gmail.com)
-Rocco Corriero (r.corriero@gmail.com)
-Enrico Zimuel (e.zimuel@gmail.com)
+Giuseppe Futia (giuseppe.futia@gmail.com), Rocco Corriero (r.corriero@gmail.com), and Enrico Zimuel (e.zimuel@gmail.com)
 
 
 Thanks
