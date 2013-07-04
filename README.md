@@ -33,15 +33,24 @@ In order to elaborate the NN from the NeuBot data you have to execute the follow
 1) Extract the .zip files of the `/source/data` folder in the `/source` folder.
 
 2) Execute the insert_city_mongodb.py script to populate the world city database in MongoDB:
-    $ python insert_city_mongodb.py
+
+```bash
+$ python insert_city_mongodb.py
+```
 
 3) Execute the insert_country_mongodb.py to populate the country database in MongoDB:
+
+```bash
     $ python insert_country_mongodb.py
+```
 
 4) Execute the neubot.py script to insert the NeuBot data in MongoDB (adding the geoinformation about the cities):
-    $ python neubot.py neubot.utf8.csv 01 2013
 
-   The data reported here are related to January 2013 of NeuBot project.
+```bash
+    $ python neubot.py neubot.utf8.csv 01 2013
+```
+
+The data reported here are related to January 2013 of NeuBot project.
 
 5) Execute the neutrality.py script to elaborate the Network Neutrality for each NeuBot data:
 
