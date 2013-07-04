@@ -41,13 +41,13 @@ $ python insert_city_mongodb.py
 3) Execute the insert_country_mongodb.py to populate the country database in MongoDB:
 
 ```bash
-    $ python insert_country_mongodb.py
+$ python insert_country_mongodb.py
 ```
 
 4) Execute the neubot.py script to insert the NeuBot data in MongoDB (adding the geoinformation about the cities):
 
 ```bash
-    $ python neubot.py neubot.utf8.csv 01 2013
+$ python neubot.py neubot.utf8.csv 01 2013
 ```
 
 The data reported here are related to January 2013 of NeuBot project.
