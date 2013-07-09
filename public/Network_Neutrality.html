@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="libs/d3.v3.min.js" type="text/javascript"></script>
+	<script src="libs/topojson.js"></script>
+	<script src="http://d3js.org/queue.v1.min.js"></script>
+	
+	<style>
+  @font-face {
+    font-family: BebasNeue;
+    src: url('BebasNeue.otf');
+  }
+
+	svg{
+		background-color: #EDEAD7;
+		font-family: "BebasNeue","Helvetica Neue", Helvetica, sans-serif; */
+	}
+
+	body {
+		background-color: #EDEAD7;
+	}
+
+	#map {
+  		width:1000px;
+  		height:550px;
+  		position: absolute;
+  		top: 0px;
+  		left: 0px;
+	}
+
+	#content {
+  		position: absolute;
+  		top: 540px;
+  		left: 0px;
+	}
+	
+	</style>
+</head>
+<body>
+	
+	<div id="map"></div>
+	<div id="content"></div>
+	
+	
+<script type="text/javascript">
+		
+		var w = 1000
+		var h = 550
+		var active
+		var zoomed = false;
+		var cd;
+		
+		var svg_content = d3.select('#content').append('svg')
+			.attr('width', 1000)
+			.attr('height', h )
+
+		var svg = d3.select("#map").append('svg')
+					.attr('width', w)
+					.attr('height', h)	
+
+		var scale = d3.scale.linear().domain([0,1]).range(["red", "green"])
+		var text_title = svg_content.append("text")
+		var text_country_provider = svg_content.append("text")
+    var text_country_istances = svg_content.append("text")
+    var text_country_nn = svg_content.append("text")
+
+    var text_town = svg_content.append("text")
+    var text_town_provider = svg_content.append("text")
+    var text_town_istances = svg_content.append("text")
+    var text_town_nn = svg_content.append("text")
+
+    var nn_violation = svg_content.append("text")
+
+
+		var group_pie;
+		var city_pie
+
+		// equirectangular
+		var proj = d3.geo.mercator()
+					.scale( (w + 1) / 2 / Math.PI )
+					.translate( [w / 2 , h / 2])
+					//.rotate([0, 0, 50])
+
+		// create the path generator
+		// using the projection system
+		var path = d3.geo.path()
+					.projection(proj)			
+
+		svg.append("rect")
+    		.attr("width", w)
+    		.attr("height", h)
+    		.style("fill", "#EDEAD7")
+    		.on("click", reset);
+
+    	var g = svg.append("g")
+    			.attr("transform","translate(0, 50)");	
+					
+		queue()
+    		.defer(d3.json, "data/world-110m.json")
+    		.defer(d3.tsv, "data/world-country-names.tsv")
+    		.defer(d3.json, "data/neutrality_country_012013.json")
+    		.await(ready);			
+
+
+    	function ready(error, world, names, country_data){
+			cd = country_data;
+			var countries = topojson.object(world, world.objects.countries).geometries
+     		neighbors = topojson.neighbors(world, countries),
+     		i = -1,
+      		n = countries.length;
+
+  			countries.forEach(function(d) {
+    			d.name = names.filter(function(n) { return d.id == n.id; })[0].name; 
+  			});
+
+  			var country = g.selectAll(".country").data(countries)
+  							
+  			country
+   				.enter()
+    			.insert("path")
+    			.attr("class", "country")    
+      			.attr("id", function(d,i) { 
+      				return d.name; })
+      			.attr("d", path)
+      			.style("fill", function(d,i){
+      			   if(country_data["features"][d.name] != undefined){
+      					 return scale(country_data["features"][d.name]["nn_upload"]);
+      				}
+      				else{
+      					var white = "#FFFFFF"
+      					return white
+      				}  
+      			})
+				//.style('opacity', .5)
+				.style('stroke', 'grey')
+				.on("click", click)
+
+      		d3.select('#Antarctica')
+      			.style('opacity',0)
+    		
+      		country
+      			.on("mousemove", function(d,i) {
+              nn_violation.text("")
+        			var mouse = d3.mouse(svg.node()).map( function(d) { return parseInt(d); } );
+        			if(!zoomed){
+        				text_title
+        				.attr("y", 100)
+       					.attr("x", 200)
+       					.style("font-size",30)
+       					.style("fill","grey")
+       					.text(d.name)
+					
+       				if(country_data["features"][d.name]!=undefined)
+       					createCountryDonut(country_data["features"][d.name]);	
+        			}
+      			})
+      			.on("mouseout",  function(d,i) {
+        			if(!zoomed){
+        				text_title.text("")
+        				svg_content.selectAll(".arc").data([]).exit().remove()
+        			}		
+        			//tooltip.classed("hidden", true)
+      		});	
+	svg.append('image')
+      .attr('xlink:href', 'big_dive.png')
+      .attr('width', 150)
+      .attr('height', 24)
+      .attr("y", 500)
+      .attr("x",30)
+      .style("opacity",0)
+       .transition()
+      .ease("bounce")
+      .duration(3500)
+      .style("opacity",1)
+
+    svg.append('image')
+      .attr('xlink:href', 'neubot.png')
+      .attr('width', 40)
+      .attr('height', 40)
+      .attr("y", 490)
+      .attr("x",200)
+      .style("opacity",0)
+       .transition()
+      .ease("bounce")
+      .duration(3500)
+      .style("opacity",1)
+
+      nn_violation
+      .attr("y", 100)
+                .text("Diving into Neubot data")
+                .style("font-family","BebasNeue")
+                .attr("x", 350)
+                .style("font-size",50)
+                .style("fill","green")
+                .style("opacity", 0)
+                .transition()
+                .duration(4500)
+                .style("opacity",1)
+                .transition()
+                .duration(800)
+                .style("fill","red")
+                
+
+                //.attr("width", "20")
+                //.attr("height", "20");
+
+
+
+    }
+
+		function click(d) {
+			
+     svg.selectAll('g').selectAll(".country").style("opacity",0.5)
+
+
+
+      zoomed = true;
+  			if (active === d) return reset();
+  			g.selectAll(".active").classed("active", false);
+  			d3.select(this).classed("active", active = d);
+
+  			var b = path.bounds(d);
+  			g.transition().duration(750).attr("transform",
+      		"translate(" + proj.translate() + ")"
+      		+ "scale(" + .95 / Math.max((b[1][0] - b[0][0]) / w, (b[1][1] - b[0][1]) / h) + ")"
+      		+ "translate(" + -(b[1][0] + b[0][0]) / 2 + "," + -(b[1][1] + b[0][1]) / 2 + ")");
+
+  			if(cd["features"][d.name]!=undefined){
+          var arrayTowns = new Array();
+			     for(var i in cd["features"][d.name]["cities"]){
+            arrayTowns.push(i);
+           } 
+
+           for (var j = 0; j<arrayTowns.length; j++) {
+            //console.log("Print town");
+            //console.log(cd["features"][d.name]["cities"][arrayTowns[j]])
+            g.append("circle")
+             .attr("r", function(){
+                if(cd["features"][d.name]["cities"][arrayTowns[j]].num_client>3){
+                  console.log(cd["features"][d.name]["cities"][arrayTowns[j]].num_client)
+                  var data_to_return = 3
+                  return data_to_return;
+                } 
+                else 
+                  return cd["features"][d.name]["cities"][arrayTowns[j]].num_client 
+             })
+             .attr("id", function(){
+                return arrayTowns[j]
+              })
+             .attr("class", "city_circle")
+             .style("stroke","white")
+             .style("stroke-width", 0.4)
+             .style("fill", function(){
+                return scale(cd["features"][d.name]["cities"][arrayTowns[j]].nn_upload);
+              })
+             .attr("transform", function() {return "translate(" + proj([cd["features"][d.name]["cities"][arrayTowns[j]].lon, cd["features"][d.name]["cities"][arrayTowns[j]].lat]) + ")"})
+             .on("mousemove", function(){
+            
+            
+             })
+             .on("click", function(){
+                text_town.text("")
+                svg_content.selectAll("#city_pie").data([]).exit().remove()
+                createCityDonut(cd["features"][d.name]["cities"][this.id]);
+                var town = this.id
+                text_town
+                  .attr("y", 100)
+                  .attr("x", 650)
+                  .style("font-size",30)
+                  .style("fill","grey")
+                  .text(this.id)   
+             })
+             .on("mouseout",  function(d,i) {
+                
+                
+            }) 
+           }
+        }   
+		}
+
+		function reset() {
+			zoomed = false;
+      svg.selectAll('g').selectAll(".country").style("opacity",1)
+  			g.selectAll(".active").classed("active", active = false);
+  			g.transition().duration(750).attr("transform", "");
+  			svg.selectAll("g").selectAll(".city_circle").data([]).exit().remove()
+        svg_content.selectAll("#city_pie").data([]).exit().remove()
+        text_town.text("")
+       
+		}	
+
+		function createCountryDonut(providers_data){
+			var dt = providers_data["providers"];
+			var arrayForCountryProviders = d3.keys(dt).map(function(d){
+				return{ 'key': d, 'number': dt[d].num_client, 'nn_upload': dt[d].nn_upload,'nn_download': dt[d].nn_download}
+			})
+			
+			var arc = d3.svg.arc()
+    			.outerRadius(90)
+    			//.innerRadius(100 - 20);
+
+			var pie = d3.layout.pie()
+    		.sort(null)
+    		.value(function(d) {
+				return d.number; }
+				);
+    		
+    		//svg_content.append("g")
+
+    		group_pie =  svg_content.selectAll(".arc")
+      					.data(pie(arrayForCountryProviders))
+    					.enter().append("g")	
+    					.attr("transform", "translate(100,100)")
+    					.attr("id", function(d,i){
+    						return d.data.key
+    					})
+      					.attr("class", "arc")
+      					.on("mouseover", function(d) { 
+      						text_country_provider
+        						.attr("y", 125)
+       							.attr("x", 200)
+       							.style("font-size", 20)
+       							.style("fill","grey")
+       							.text(d.data.key) 
+       							
+                  text_country_istances
+                    .attr("y", 150)
+                    .attr("x", 200)
+                    .style("font-size", 20)
+                    .style("fill","grey")
+                    .text(d.data.key)    
+                    .text("Neubot instances: "+d.data.number)
+
+                   text_country_nn
+                   .attr("y", 175)
+                    .attr("x", 200)
+                    .style("font-size", 20)
+                    .style("fill","grey")
+                    .text(d.data.key)    
+                    .text("Network Neutrality: "+d.data.nn_upload) 
+      					 })
+      					 .on("mouseout", function() {
+      					 	text_country_provider.text("")
+                  text_country_istances.text("")
+                  text_country_nn.text("")
+      					 }) 
+
+      					//attr("transform", "translate(100,100)");
+
+      		group_pie.append("path")
+      			.attr("d", arc)
+      			.style("fill", function(d){
+      				return scale(d.data.nn_upload)
+      			})
+      			.transition()
+      			.ease("bounce")
+      			.duration(2000)
+      			.attrTween("d", tweenPie)
+      			.transition()
+      			.ease("elastic")
+      			.delay(function(d,i){return 2000 + i*50;})
+      			.duration(750)
+      			.attrTween("d", tweenDonut);
+
+      		function tweenPie(b){
+      			b.innerRadius = 0;
+      			var i = d3.interpolate({startAngle:0, endAngle:0}, b);
+      			return function(t){return arc(i(t));};
+      		}
+
+      		function tweenDonut(b){
+      			b.innerRadius = 90 * .6;
+      			var i = d3.interpolate({innerRadius:0},b);
+      			return function(t){return arc(i(t));};
+
+      		}	
+
+    	}
+
+    	function createCityDonut(providers_data){
+			 var dt = providers_data["providers"];
+		   var arrayForCountryProviders = d3.keys(dt).map(function(d){
+				  return{ 'key': d, 'number': dt[d].num_client, 'nn_upload': dt[d].nn_upload,'nn_download': dt[d].nn_download}
+			})
+
+			var arc2 = d3.svg.arc()
+    			.outerRadius(90)
+    			//.innerRadius(100 - 20);
+
+			var pie2 = d3.layout.pie()
+    		.sort(null)
+    		.value(function(d) {
+				return d.number; }
+				);
+    		
+    		//svg_content.append("g")
+
+    		city_pie =  svg_content.selectAll(".arc2")
+      					.data(pie2(arrayForCountryProviders))
+    					.enter().append("g")
+    					.attr("transform", "translate(550,100)")
+    					.attr("id","city_pie")
+      					.attr("class", "arc2")
+      					//attr("transform", "translate(100,100)");
+
+      		city_pie.append("path")
+      			.attr("d", arc2)
+      			.style("fill", function(d){
+      				return scale(d.data.nn_upload)
+      			})
+            .on("mouseover", function(d) { 
+                  text_town_provider
+                    .attr("y", 125)
+                    .attr("x", 650)
+                    .style("font-size", 20)
+                    .style("fill","grey")
+                    .text(d.data.key) 
+                    
+                  text_town_istances
+                    .attr("y", 150)
+                    .attr("x", 650)
+                    .style("font-size", 20)
+                    .style("fill","grey")
+                    .text(d.data.key)    
+                    .text("Neubot instances: "+d.data.number)
+
+                   text_town_nn
+                   .attr("y", 175)
+                    .attr("x", 650)
+                    .style("font-size", 20)
+                    .style("fill","grey")
+                    .text(d.data.key)    
+                    .text("Network Neutrality: "+d.data.nn_upload) 
+                 })
+                 .on("mouseout", function() {
+                  text_town_provider.text("")
+                  text_town_istances.text("")
+                  text_town_nn.text("")
+                 }) 
+      			.transition()
+      			.ease("bounce")
+      			.duration(2000)
+      			.attrTween("d", tweenPie2)
+      			.transition()
+      			.ease("elastic")
+      			.delay(function(d,i){return 2000 + i*50;})
+      			.duration(750)
+      			.attrTween("d", tweenDonut2);
+
+      		function tweenPie2(b){
+      			b.innerRadius = 0;
+      			var i = d3.interpolate({startAngle:0, endAngle:0}, b);
+      			return function(t){return arc2(i(t));};
+      		}
+
+      		function tweenDonut2(b){
+      			b.innerRadius = 90 * .6;
+      			var i = d3.interpolate({innerRadius:0},b);
+      			return function(t){return arc2(i(t));};
+
+      		}	
+
+    	}
+
+</script>
+
+</body>
+</html>
